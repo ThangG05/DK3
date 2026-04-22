@@ -3,6 +3,7 @@ import API from "../services/api";
 import { UserPlus, Trash2, Mail, Building2 } from "lucide-react";
 
 const EmployeeManager = () => {
+  console.log("Link API hiện tại là:", import.meta.env.VITE_API_URL);
   const [list, setList] = useState([]);
   const [form, setForm] = useState({ FullName: "", Email: "", Department: "" });
   const [loading, setLoading] = useState(false);
