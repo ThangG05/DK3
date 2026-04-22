@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
 import { Link } from "react-router-dom";
-import { Mail, Calendar, ChevronRight, BarChart2, Plus } from "lucide-react";
+import { Mail, Calendar, ChevronRight, Plus } from "lucide-react";
 
 const Campaigns = () => {
   const [list, setList] = useState([]);

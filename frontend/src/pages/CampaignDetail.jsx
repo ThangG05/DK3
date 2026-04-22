@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
-import { Send, ArrowLeft, BarChart3, Eye } from "lucide-react";
+import { Send, ArrowLeft, Eye } from "lucide-react";
 
 const CampaignDetail = () => {
   const { id } = useParams();

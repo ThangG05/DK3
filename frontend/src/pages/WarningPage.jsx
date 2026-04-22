@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { ShieldAlert, AlertTriangle, ChevronLeft, Lock } from "lucide-react";
+import { ShieldAlert, AlertTriangle, Lock } from "lucide-react";
 
 const WarningPage = () => {
   const [params] = useSearchParams();
