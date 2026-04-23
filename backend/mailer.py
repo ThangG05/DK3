@@ -9,28 +9,31 @@ load_dotenv()
 def send_phishing_email(to_email, subject, html_content, token):
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
-    base_url = os.getenv("BASE_URL", "https://himass-backend.onrender.com").rstrip('/')
+    
+    # 1. FIX LỖI "NONE": Ép kiểm tra nếu là chuỗi "None" thì dùng link thật
+    raw_url = os.getenv("BASE_URL")
+    if not raw_url or str(raw_url).lower() == "none":
+        base_url = "https://himass-backend.onrender.com"
+    else:
+        base_url = raw_url.rstrip('/')
 
     tracking_link = f"{base_url}/track/click?t={token}"
     tracking_pixel = f'<img src="{base_url}/track/open?t={token}" width="1" height="1" style="display:none;" />'
-    # Nếu AI có placeholder
-    if "[LINK_HERE]" in html_content:
-        final_html = html_content.replace(
-            "[LINK_HERE]",
-            tracking_link
-        )
-    else:
-        # fallback nếu AI không có link
-        final_html = html_content + f"""
-        <p>
-            <a href="{tracking_link}" 
-               style="background:#2563eb;color:#fff;padding:10px 16px;
-                      text-decoration:none;border-radius:6px;font-weight:bold">
-               Xác minh ngay
-            </a>
-        </p>
-        """
 
+    # 2. DEBUG: In ra log Render để kiểm tra link lúc gửi
+    print(f"DEBUG SENDING: Link is {tracking_link}")
+
+    # 3. FIX LỖI PLACEHOLDER: Replace mạnh tay hơn
+    final_html = str(html_content)
+    if "[LINK_HERE]" in final_html:
+        final_html = final_html.replace("[LINK_HERE]", tracking_link)
+    
+    # Nếu sau khi replace mà vẫn còn sót placeholder (do bị encode)
+    final_html = final_html.replace("%5BLINK_HERE%5D", tracking_link)
+
+    # 4. DỰ PHÒNG: Nếu trong mail không có link, tự chèn thêm một nút bấm ở cuối
+    if tracking_link not in final_html:
+        final_html += f'<p><a href="{tracking_link}" style="color:blue;">Cập nhật tại đây</a></p>'
     # Bọc lại HTML chuẩn email (rất quan trọng)
     final_html = f"""
     <html>
