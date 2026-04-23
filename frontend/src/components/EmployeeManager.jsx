@@ -1,49 +1,63 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
-import { UserPlus, Trash2, Mail, Building2 } from "lucide-react";
+import { UserPlus, Trash2, Mail, Building2, Loader2 } from "lucide-react"; // Thêm Loader2 để làm hiệu ứng loading
 
 const EmployeeManager = () => {
-  console.log("Link API hiện tại là:", import.meta.env.VITE_API_URL);
   const [list, setList] = useState([]);
   const [form, setForm] = useState({ FullName: "", Email: "", Department: "" });
   const [loading, setLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false); // Trạng thái riêng cho việc load danh sách
 
-  const fetch = async () => {
+  // Hàm lấy danh sách nhân viên (Backend lúc này đã lọc IsActive = True)
+  const fetchEmployees = async () => {
+    setIsFetching(true);
     try {
       const res = await API.get("/employees/");
       setList(res.data);
     } catch (err) {
       console.error("Lỗi lấy danh sách:", err);
+    } finally {
+      setIsFetching(false);
     }
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
-  const submit = async (e) => {
+  // Hàm thêm nhân viên mới
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.FullName || !form.Email) return alert("Vui lòng nhập đủ tên và email");
-    
-    setLoading(true);
-    await API.post("/employees/", form);
-    setForm({ FullName: "", Email: "", Department: "" });
-    await fetch();
-    setLoading(false);
-  };
 
-  const deleteEmployee = async (id) => {
-  if (window.confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
+    setLoading(true);
     try {
-      setLoading(true); // Hiển thị trạng thái đang xử lý
-      await API.delete(`/employees/${id}`);
-      await fetch(); // Tải lại danh sách sau khi xóa
+      await API.post("/employees/", form);
+      setForm({ FullName: "", Email: "", Department: "" });
+      await fetchEmployees();
     } catch (err) {
-      console.error("Lỗi khi xóa:", err);
-      alert("Không thể xóa nhân viên này. Có thể họ đã tham gia vào một chiến dịch phishing.");
+      alert(err.response?.data?.detail || "Lỗi khi thêm nhân viên");
     } finally {
       setLoading(false);
     }
-  }
-};
+  };
+
+  // Hàm xóa nhân viên (Thực tế là gọi API để update IsActive = false)
+  const deleteEmployee = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa nhân viên này khỏi danh sách hoạt động?")) {
+      setLoading(true);
+      try {
+        await API.delete(`/employees/${id}`);
+        // Tải lại danh sách ngay lập tức để người dùng thấy nhân viên đã "biến mất"
+        await fetchEmployees();
+      } catch (err) {
+        console.error("Lỗi khi xóa:", err);
+        alert("Không thể xóa nhân viên. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500">
@@ -53,13 +67,16 @@ const EmployeeManager = () => {
           <h2 className="text-xl font-bold text-slate-800">Quản lý nhân viên</h2>
           <p className="text-sm text-slate-500">Thêm và quản lý danh sách mục tiêu giả lập</p>
         </div>
-        <span className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-xs font-bold ring-4 ring-blue-50">
-          {list.length} Tổng số
-        </span>
+        <div className="flex items-center gap-3">
+          {isFetching && <Loader2 className="animate-spin text-blue-500" size={18} />}
+          <span className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-xs font-bold ring-4 ring-blue-50">
+            {list.length} Nhân viên hoạt động
+          </span>
+        </div>
       </div>
 
       {/* Form Input */}
-      <form onSubmit={submit} className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50/30 border-b border-slate-100">
+      <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50/30 border-b border-slate-100">
         <div className="relative">
           <input 
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
@@ -88,10 +105,12 @@ const EmployeeManager = () => {
           <Building2 className="absolute left-3 top-3 text-slate-400" size={18} />
         </div>
         <button 
+          type="submit"
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-100 active:scale-95"
+          className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-100 active:scale-95 px-4 py-2.5"
         >
-          {loading ? "Đang lưu..." : "Thêm nhân viên"}
+          {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+          {loading ? "Đang xử lý..." : "Thêm nhân viên"}
         </button>
       </form>
 
@@ -120,7 +139,8 @@ const EmployeeManager = () => {
                 <td className="px-6 py-4 text-right">
                   <button 
                     onClick={() => deleteEmployee(e.EmployeeID)}
-                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                    disabled={loading}
+                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-50"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -129,7 +149,7 @@ const EmployeeManager = () => {
             )) : (
               <tr>
                 <td colSpan="3" className="px-6 py-10 text-center text-slate-400 italic">
-                  Chưa có nhân viên nào trong danh sách.
+                  {isFetching ? "Đang tải dữ liệu..." : "Chưa có nhân viên nào trong danh sách hoạt động."}
                 </td>
               </tr>
             )}

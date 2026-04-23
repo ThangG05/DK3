@@ -64,7 +64,7 @@ def get_stats(db: Session = Depends(database.get_db)):
 # ================================
 @app.get("/employees/", response_model=list[schemas.Employee])
 def get_employees(db: Session = Depends(database.get_db)):
-    return db.query(models.Employee).all()
+    return db.query(models.Employee).filter(models.Employee.IsActive == True).all()
 
 @app.post("/employees/", response_model=schemas.Employee)
 def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(database.get_db)):
@@ -207,21 +207,24 @@ def track_open(t: str = Query(...), db: Session = Depends(database.get_db)):
         db.commit()
     return Response(content=b"", media_type="image/png")
 # ================================
-# BỔ SUNG: XÓA NHÂN VIÊN
+# BỔ SUNG: XÓA NHÂN VIÊN (SOFT DELETE)
 # ================================
 @app.delete("/employees/{employee_id}")
 def delete_employee(employee_id: int, db: Session = Depends(database.get_db)):
     db_employee = db.query(models.Employee).filter(models.Employee.EmployeeID == employee_id).first()
+    
     if not db_employee:
-        raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên để xóa")
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên")
     
     try:
-        db.delete(db_employee)
+        # Thay vì xóa thật: db.delete(db_employee)
+        # Chúng ta chỉ đánh dấu là đã xóa (Ẩn đi)
+        db_employee.IsActive = False 
         db.commit()
-        return {"message": f"Đã xóa nhân viên có ID {employee_id}"}
+        return {"message": f"Đã ẩn nhân viên có ID {employee_id} khỏi danh sách"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Không thể xóa nhân viên này (có thể liên quan đến dữ liệu chiến dịch)")
+        raise HTTPException(status_code=500, detail="Lỗi khi cập nhật trạng thái nhân viên")
 # ================================
 # RUN (Lưu ý: Render sẽ dùng lệnh trong Dockerfile)
 # ================================
