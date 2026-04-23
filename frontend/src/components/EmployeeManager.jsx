@@ -31,11 +31,19 @@ const EmployeeManager = () => {
   };
 
   const deleteEmployee = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
+  if (window.confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
+    try {
+      setLoading(true); // Hiển thị trạng thái đang xử lý
       await API.delete(`/employees/${id}`);
-      fetch();
+      await fetch(); // Tải lại danh sách sau khi xóa
+    } catch (err) {
+      console.error("Lỗi khi xóa:", err);
+      alert("Không thể xóa nhân viên này. Có thể họ đã tham gia vào một chiến dịch phishing.");
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+};
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500">

@@ -181,9 +181,6 @@ def send_campaign(campaign_id: int, background_tasks: BackgroundTasks, db: Sessi
 # ================================
 # 8. TRACK CLICK (Fix utcnow)
 # ================================
-# ================================
-# 8. TRACK CLICK (Đã tối ưu cho Production)
-# ================================
 @app.get("/track/click")
 def track_click(t: str = Query(...), db: Session = Depends(database.get_db)):
     log = db.query(models.PhishingLog).filter(models.PhishingLog.TrackingToken == t).first()
@@ -209,7 +206,22 @@ def track_open(t: str = Query(...), db: Session = Depends(database.get_db)):
         log.IsOpened = True
         db.commit()
     return Response(content=b"", media_type="image/png")
-
+# ================================
+# BỔ SUNG: XÓA NHÂN VIÊN
+# ================================
+@app.delete("/employees/{employee_id}")
+def delete_employee(employee_id: int, db: Session = Depends(database.get_db)):
+    db_employee = db.query(models.Employee).filter(models.Employee.EmployeeID == employee_id).first()
+    if not db_employee:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên để xóa")
+    
+    try:
+        db.delete(db_employee)
+        db.commit()
+        return {"message": f"Đã xóa nhân viên có ID {employee_id}"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Không thể xóa nhân viên này (có thể liên quan đến dữ liệu chiến dịch)")
 # ================================
 # RUN (Lưu ý: Render sẽ dùng lệnh trong Dockerfile)
 # ================================
