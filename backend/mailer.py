@@ -9,11 +9,10 @@ load_dotenv()
 def send_phishing_email(to_email, subject, html_content, token):
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
-    base_url = os.getenv("BASE_URL")  # http://127.0.0.1:8000
+    base_url = os.getenv("BASE_URL", "https://himass-backend.onrender.com").rstrip('/')
 
     tracking_link = f"{base_url}/track/click?t={token}"
     tracking_pixel = f'<img src="{base_url}/track/open?t={token}" width="1" height="1" style="display:none;" />'
-
     # Nếu AI có placeholder
     if "[LINK_HERE]" in html_content:
         final_html = html_content.replace(
