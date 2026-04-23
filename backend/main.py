@@ -181,17 +181,24 @@ def send_campaign(campaign_id: int, background_tasks: BackgroundTasks, db: Sessi
 # ================================
 # 8. TRACK CLICK (Fix utcnow)
 # ================================
+# ================================
+# 8. TRACK CLICK (Đã tối ưu cho Production)
+# ================================
 @app.get("/track/click")
 def track_click(t: str = Query(...), db: Session = Depends(database.get_db)):
     log = db.query(models.PhishingLog).filter(models.PhishingLog.TrackingToken == t).first()
     if log and not log.IsClicked:
         log.IsClicked = True
-        log.ClickedAt = datetime.now() # Đã fix
+        log.ClickedAt = datetime.now()
         db.commit()
 
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    return RedirectResponse(url=f"{frontend_url}/warning?t={t}")
-
+    # Thắng sửa lại dòng này: ưu tiên link thực tế nếu không tìm thấy biến môi trường
+    frontend_url = os.getenv("FRONTEND_URL", "https://dk-3-zeta.vercel.app")
+    
+    # Đảm bảo URL cuối cùng trông như thế này: https://dk-3-zeta.vercel.app/warning?t=...
+    redirect_target = f"{frontend_url.rstrip('/')}/warning?t={t}"
+    
+    return RedirectResponse(url=redirect_target)
 # ================================
 # 9. TRACK OPEN
 # ================================
